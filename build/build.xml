@@ -5,11 +5,11 @@
 
   @package		Kunena
   @subpackage	com_kunena
-  @copyright	Copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
+  @copyright	Copyright (C) 2008 - 2015 Kunena Team. All rights reserved.
   				portions (C) 2007 MjazTools. All rights reserved.
   @license		GNU General Public License <http://www.gnu.org/copyleft/gpl.html>
   @link			http://www.kunena.org
-  
+
   The following parameters can be defined inside the Eclipse build task as Arguments. They
   allow the build file to be platform independent as not path information resides within
   any of the build files.
@@ -35,8 +35,8 @@
 		<not><isset property="build_dir" /></not>
 	</condition>
 	<property file="build.config.ini" />
-	<property name="kunena.site" value="components/com_kunena" />
-	<property name="kunena.admin" value="administrator/components/com_kunena" />
+	<property name="kunena.site" value="components/com_kunena/site" />
+	<property name="kunena.admin" value="components/com_kunena/admin" />
 	<property name="kunena.media" value="media/kunena" />
 
 	<target name="dist" depends="mkdir,archive_old,init,build,minify,copy,info,cleanup" />
@@ -45,6 +45,7 @@
 		<mkdir dir="${tmp_dir}" />
 		<mkdir dir="${tmp_dir}/languages_extra" />
 		<mkdir dir="${tmp_dir}/languages_extra/language" />
+		<mkdir dir="${tmp_dir}/crypsisb3" />
 		<mkdir dir="${build_dir}" />
 		<mkdir dir="${package_dir}" />
 		<mkdir dir="${package_dir}/archive" />
@@ -66,14 +67,14 @@
 		-->
 		<taskdef name="yui-compressor" classname="net.noha.tools.ant.yuicompressor.tasks.YuiCompressorTask">
 			<classpath>
-				<pathelement path="${project_dir}/build/lib/yuicompressor-2.4.7.jar" />
+				<pathelement path="${project_dir}/build/lib/yuicompressor-2.4.8.jar" />
 				<pathelement path="${project_dir}/build/lib/yui-compressor-ant-task-0.5.jar" />
 			</classpath>
 		</taskdef>
 
 		<taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${project_dir}/build/lib/ant-contrib-1.0b3.jar"/>
 
-		<xmlproperty file="${project_dir}/${kunena.admin}/${cfg.name}.xml" collapseAttributes="true" prefix="xml" keepRoot="false" />
+		<xmlproperty file="${project_dir}/pkg_kunena.xml" collapseAttributes="true" prefix="xml" keepRoot="false" />
 		<tstamp>
 			<format property="str.datefmt" pattern="${cfg.datefmt}" locale="${cfg.dateloc}" />
 		</tstamp>
@@ -86,8 +87,9 @@
 		<condition property="str.date" value="_${str.datefmt}" else="">
 			<istrue value="${cfg.adddate}" />
 		</condition>
-		<property name="str.destfile" value="${package_dir}/${cfg.prefix}${cfg.name}${str.version}${str.date}" />
-		<property name="str.destlangfile" value="${package_dir}/pkg_${cfg.name}_languages${str.version}${str.date}" />
+		<property name="str.fileversion" value="${str.version}${str.date}" />
+		<property name="str.destfile" value="${package_dir}/${cfg.prefix}${cfg.name}${str.fileversion}" />
+		<property name="str.destlangfile" value="${package_dir}/pkg_${cfg.name}_languages${str.fileversion}" />
 
 		<condition property="do.tar">
 			<istrue value="${cfg.tar}" />
@@ -102,21 +104,31 @@
 			<istrue value="${cfg.bz2}" />
 		</condition>
 
-		<copy todir="${tmp_dir}/admin">
+		<copy todir="${tmp_dir}/packages/lib_kunena" overwrite="true">
+			<fileset dir="${project_dir}/libraries/kunena"/>
+		</copy>
+		<copy todir="${tmp_dir}/packages/plg_system_kunena" overwrite="true">
+			<fileset dir="${project_dir}/plugins/plg_system_kunena"/>
+		</copy>
+		<copy todir="${tmp_dir}/packages/plg_quickicon_kunena" overwrite="true">
+			<fileset dir="${project_dir}/plugins/plg_quickicon_kunena"/>
+		</copy>
+		<copy todir="${tmp_dir}/packages/kunena_media" overwrite="true">
+			<fileset dir="${project_dir}/media/kunena">
+				<exclude name="${project_dir}/media/kunena/external/**"/>
+			</fileset>
+		</copy>
+		<copy todir="${tmp_dir}/packages/com_kunena">
 			<fileset dir="${project_dir}/${kunena.admin}">
 				<exclude name="language/**"/>
-				<exclude name="install/**"/>
 			</fileset>
-		</copy>	
-		<copy todir="${tmp_dir}/install">
-			<fileset dir="${project_dir}/${kunena.admin}/install" />
-		</copy>	
-		<copy todir="${tmp_dir}/site">
+		</copy>
+		<copy todir="${tmp_dir}/packages/com_kunena/site">
 			<fileset dir="${project_dir}/${kunena.site}">
-				<exclude name="language/*-*/**"/>
+				<exclude name="language/**"/>
 				<exclude name="template/**/params.ini"/>
 			</fileset>
-		</copy>	
+		</copy>
 	</target>
 
 	<target name="build" depends="init">
@@ -126,51 +138,55 @@
 		<filter token="kunenaversionname" value="${xml.versionname}" />
 
 		<!-- Add version information to all xml files and forum.php -->
-		<copy todir="${tmp_dir}/admin" overwrite="true" filtering="true">
+		<copy todir="${tmp_dir}/packages/lib_kunena" overwrite="true" filtering="true">
+			<fileset dir="${project_dir}/libraries/kunena">
+				<include name="forum/forum.php"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</copy>
+		<copy todir="${tmp_dir}/packages/plg_system_kunena" overwrite="true" filtering="true">
+			<fileset dir="${project_dir}/plugins/plg_system_kunena">
+				<include name="**/*.xml"/>
+			</fileset>
+		</copy>
+		<copy todir="${tmp_dir}/packages/plg_quickicon_kunena" overwrite="true" filtering="true">
+			<fileset dir="${project_dir}/plugins/plg_quickicon_kunena">
+				<include name="**/*.xml"/>
+			</fileset>
+		</copy>
+		<copy todir="${tmp_dir}/packages/kunena_media" overwrite="true" filtering="true">
+			<fileset dir="${project_dir}/media/kunena">
+				<include name="**/*.xml"/>
+			</fileset>
+		</copy>
+		<copy todir="${tmp_dir}/packages/com_kunena" overwrite="true" filtering="true">
 			<fileset dir="${project_dir}/${kunena.admin}">
-				<include name="libraries/forum/forum.php"/>
 				<include name="**/*.xml"/>
 				<exclude name="language/**/*.xml"/>
 			</fileset>
 		</copy>
-		<copy todir="${tmp_dir}/site" overwrite="true" filtering="true">
+		<copy todir="${tmp_dir}/packages/com_kunena/site" overwrite="true" filtering="true">
 			<fileset dir="${project_dir}/${kunena.site}">
 				<include name="**/*.xml"/>
 				<exclude name="language/**/*.xml"/>
 			</fileset>
 		</copy>
-		
-		<!-- Remove Mirage template -->
-		<delete dir="${tmp_dir}/site/template/mirage" />
-
-		<!-- Move media files -->
-		<move todir="${tmp_dir}/media">
-			<fileset dir="${tmp_dir}/admin/${kunena.media}" />
-		</move>	
 
 		<!-- Move files needed by the installer -->
-		<move file="${tmp_dir}/admin/${cfg.name}.xml" todir="${build_dir}" overwrite="true" filtering="true" />
-		<move file="${tmp_dir}/site/COPYRIGHT.php" todir="${build_dir}" overwrite="true" filtering="true" />
+		<copy file="${project_dir}/pkg_kunena.xml" todir="${build_dir}" overwrite="true" filtering="true" />
+		<copy file="${project_dir}/install.php" todir="${build_dir}" overwrite="true" filtering="true" />
+		<copy file="${project_dir}/COPYRIGHT.php" todir="${build_dir}" overwrite="true" filtering="true" />
 		<copy file="${project_dir}/README.md" tofile="${build_dir}/README.txt" overwrite="true" filtering="true" />
 		<copy file="${project_dir}/LICENSE.txt" tofile="${build_dir}/LICENSE.txt" overwrite="true" filtering="true" />
-
-		<move file="${tmp_dir}/install/media/kunena-logo-48-black.png" todir="${build_dir}/install/media" overwrite="true" />
-		<move todir="${build_dir}/install" overwrite="true" filtering="true" >
-			<fileset dir="${tmp_dir}/install">
-				<include name="index.html"/>
-				<include name="install.kunena.php"/>
-				<include name="install.script.php"/>
-				<include name="entrypoints/**"/>
-				<include name="media/index.html"/>
-			</fileset>
-		</move>
+		<!--copy todir="${build_dir}/install" overwrite="true" filtering="true">
+			<fileset dir="${project_dir}/${kunena.admin}/install" />
+		</copy-->
 
 		<!-- Rename component entry files so that they replace the installer files just before the end of the installation process. -->
-		<move file="${tmp_dir}/admin/api.php" tofile="${tmp_dir}/admin/api.new.php" overwrite="true" filtering="true" />
-		<move todir="${build_dir}/archive" includeEmptyDirs="no">
-			<fileset dir="${tmp_dir}/admin/archive" />
-		</move>
-		
+		<!--move todir="${build_dir}/archive" includeEmptyDirs="no">
+			<fileset dir="${tmp_dir}/archive" />
+		</move-->
+
 		<!-- Language pack -->
 		<copy file="${project_dir}/${kunena.admin}/language/all/README.md" tofile="${tmp_dir}/languages_extra/README.txt" overwrite="true" filtering="true" />
 		<copy file="${project_dir}/${kunena.admin}/language/all/pkg_kunena_languages.xml" tofile="${tmp_dir}/languages_extra/pkg_kunena_languages.xml" overwrite="true" filtering="true" />
@@ -178,20 +194,39 @@
 
 		<!-- Readme -->
 		<copy file="${project_dir}/README.md" tofile="${package_dir}/README.txt" overwrite="true" filtering="true" />
+
+		<!-- Put template crypsis boostrap 3 in his own package -->
+		<copy todir="${tmp_dir}/crypsisb3" overwrite="true">
+			<fileset dir="${project_dir}/${kunena.site}/template/crypsisb3">
+				<exclude name="**/*.md"/>
+			</fileset>
+		</copy>
+
+		<copy file="${project_dir}/${kunena.site}/template/crypsisb3/README.md" tofile="${tmp_dir}/crypsisb3/README.txt" overwrite="true" filtering="true" />
+
+		<copy todir="${tmp_dir}/crypsisb3" overwrite="true" filtering="true">
+			<fileset dir="${project_dir}/${kunena.site}/template/crypsisb3">
+				<include name="**/*.xml"/>
+			</fileset>
+		</copy>
+
+		<delete dir="${tmp_dir}/packages/com_kunena/site/template/crypsisb3" />
 	</target>
 
 	<target name="minify" depends="build">
-		<yui-compressor warn="false" munge="true" charset="UTF-8" fromdir="${tmp_dir}/site" todir="${tmp_dir}/site">
+		<yui-compressor warn="false" munge="true" charset="UTF-8" fromdir="${tmp_dir}/packages/com_kunena/site" todir="${tmp_dir}/packages/com_kunena/site">
+			<exclude name="**/*-min.js" />
+			<exclude name="**/*-min.css" />
 			<include name="**/*.js" />
 			<include name="**/*.css" />
-			<exclude name="**/plupload.js" />
-			<exclude name="template/mirage/css/*.css" />
 		</yui-compressor>
-		<yui-compressor warn="false" munge="true" charset="UTF-8" fromdir="${tmp_dir}/media/js" todir="${tmp_dir}/media/js">
+		<yui-compressor warn="false" munge="true" charset="UTF-8" fromdir="${tmp_dir}/packages/kunena_media/js" todir="${tmp_dir}/packages/kunena_media/js">
+			<exclude name="**/*-min.js" />
+			<exclude name="**/*-min.css" />
 			<include name="**/*.js" />
 		</yui-compressor>
 	</target>
-	
+
 	<macrodef name="language">
 		<attribute name="tag" default="en-GB"/>
 		<attribute name="include" default="false"/>
@@ -200,36 +235,29 @@
 			<copy todir="${tmp_dir}/languages/@{tag}/admin" flatten="yes" includeEmptyDirs="no" overwrite="true">
 				<fileset dir="${project_dir}/${kunena.admin}">
 					<include name="**/@{tag}.*.ini"/>
-					<include name="index.html"/>
 				</fileset>
 			</copy>
 			<copy todir="${tmp_dir}/languages/@{tag}/site" flatten="yes" includeEmptyDirs="no" overwrite="true">
 				<fileset dir="${project_dir}/${kunena.site}">
 					<include name="**/@{tag}.*.ini"/>
-					<include name="index.html"/>
 				</fileset>
 			</copy>
 			<if>
 				<equals arg1="@{include}" arg2="true" />
 				<then>
-					<copy todir="${build_dir}/language/@{tag}">
+					<copy todir="${tmp_dir}/packages/com_kunena/language/@{tag}">
 						<fileset dir="${tmp_dir}/languages/@{tag}/admin" />
 					</copy>
-					<copy todir="${tmp_dir}/site/language/@{tag}">
+					<copy todir="${tmp_dir}/packages/com_kunena/site/language/@{tag}">
 						<fileset dir="${tmp_dir}/languages/@{tag}/site" />
 					</copy>
 				</then>
 				<else>
-					<move todir="${build_dir}/language/@{tag}">
+					<move todir="${tmp_dir}/packages/com_kunena/language/@{tag}">
 						<fileset dir="${tmp_dir}/languages/@{tag}/admin">
 							<include name="*.install.ini"/>
 						</fileset>
 					</move>
-					<copy todir="${build_dir}/language/@{tag}">
-						<fileset dir="${tmp_dir}/languages/@{tag}/admin">
-							<include name="index.html"/>
-						</fileset>
-					</copy>
 					<archive destfile="${tmp_dir}/languages_extra/language/com_kunena_@{tag}_v${xml.version}" basedir="${tmp_dir}/languages/@{tag}"/>
 				</else>
 			</if>
@@ -243,28 +271,24 @@
 			<if>
 				<equals arg1="${do.zip}" arg2="true" />
 				<then>
-					<echo file="${build_dir}/archive/fileformat">.zip</echo>
 					<zip destfile="@{destfile}.zip" basedir="@{basedir}" excludes="**/*.tar,**/*.gz,**/*.bz2"/>
 				</then>
 			</if>
 			<if>
 				<equals arg1="${do.tar}" arg2="true" />
 				<then>
-					<echo file="${build_dir}/archive/fileformat">.tar</echo>
 					<tar destfile="@{destfile}.tar" basedir="@{basedir}" compression="none" excludes="**/*.zip,**/*.gz,**/*.bz2" />
 				</then>
 			</if>
 			<if>
 				<equals arg1="${do.gzip}" arg2="true" />
 				<then>
-					<echo file="${build_dir}/archive/fileformat">.tar.gz</echo>
 					<tar destfile="@{destfile}.tar.gz" basedir="@{basedir}" compression="gzip" excludes="**/*.zip,**/*.tar,**/*.bz2" />
 				</then>
 			</if>
 			<if>
 				<equals arg1="${do.bz2}" arg2="true" />
 				<then>
-					<echo file="${build_dir}/archive/fileformat">.tar.bz2</echo>
 					<tar destfile="@{destfile}.tar.bz2" basedir="@{basedir}" compression="bzip2" excludes="**/*.zip,**/*.tar,**/*.gz" />
 				</then>
 			</if>
@@ -272,11 +296,10 @@
 	</macrodef>
 
 	<target name="copy" depends="minify">
-		<mkdir dir="${build_dir}/archive" />
-		
 		<mkdir dir="${tmp_dir}/languages" />
-		<copy file="${project_dir}/${kunena.admin}/language/index.html" todir="${build_dir}/language/" />
-		<language tag="ar-AA" include="all" />
+		<language tag="en-GB" include="true" />
+		<language tag="af-ZA" />
+		<language tag="ar-AA" />
 		<language tag="az-AZ" />
 		<language tag="bg-BG" />
 		<language tag="bs-BA" />
@@ -287,16 +310,15 @@
 		<language tag="da-DK" />
 		<language tag="de-DE" />
 		<language tag="el-GR" />
-		<language tag="en-GB" include="true" />
 		<language tag="eo-XX" />
 		<language tag="es-ES" />
 		<language tag="et-EE" />
+		<language tag="eu-ES" />
 		<language tag="fa-IR" />
 		<language tag="fi-FI" />
 		<language tag="fr-FR" />
-		<!--language tag="gl-ES" /-->
 		<language tag="he-IL" />
-		<!--language tag="hi-IN" /-->
+		<language tag="hi-IN" />
 		<language tag="hr-HR" />
 		<language tag="hu-HU" />
 		<language tag="id-ID" />
@@ -315,25 +337,29 @@
 		<language tag="pt-PT" />
 		<language tag="ro-RO" />
 		<language tag="ru-RU" />
-		<language tag="sl-SI" />
 		<language tag="sk-SK" />
+		<language tag="sl-SI" />
 		<language tag="sq-AL" />
 		<language tag="sr-RS" />
 		<language tag="sr-YU" />
 		<language tag="sv-SE" />
 		<language tag="th-TH" />
 		<language tag="tr-TR" />
+		<language tag="ug-CN" />
 		<language tag="uk-UA" />
 		<language tag="ur-PK" />
 		<language tag="vi-VN" />
 		<language tag="zh-CN" />
 		<language tag="zh-TW" />
-		<archive destfile="${build_dir}/archive/com_kunena-install" basedir="${tmp_dir}/install" />
-		<archive destfile="${build_dir}/archive/com_kunena-admin" basedir="${tmp_dir}/admin" />
-		<archive destfile="${build_dir}/archive/com_kunena-site" basedir="${tmp_dir}/site" />
-		<archive destfile="${build_dir}/archive/com_kunena-media" basedir="${tmp_dir}/media" />
+
+		<archive destfile="${build_dir}/packages/plg_system_kunena${str.version}" basedir="${tmp_dir}/packages/plg_system_kunena" />
+		<archive destfile="${build_dir}/packages/plg_quickicon_kunena${str.version}" basedir="${tmp_dir}/packages/plg_quickicon_kunena" />
+		<archive destfile="${build_dir}/packages/lib_kunena${str.version}" basedir="${tmp_dir}/packages/lib_kunena" />
+		<archive destfile="${build_dir}/packages/com_kunena${str.version}" basedir="${tmp_dir}/packages/com_kunena" />
+		<archive destfile="${build_dir}/packages/kunena_media${str.version}" basedir="${tmp_dir}/packages/kunena_media" />
 		<archive destfile="${str.destfile}" basedir="${build_dir}" />
 		<archive destfile="${str.destlangfile}" basedir="${tmp_dir}/languages_extra" />
+		<archive destfile="${package_dir}/tmpl_kunena_crypsisb3${str.fileversion}" basedir="${tmp_dir}/crypsisb3" />
 	</target>
 
 	<target name="info" depends="copy">

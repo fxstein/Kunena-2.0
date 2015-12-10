@@ -18,8 +18,7 @@ $avatar = $profile->getAvatarImage($this->ktemplate->params->get('avatarType'), 
 $banInfo = $this->config->showbannedreason
 	? KunenaUserBan::getInstanceByUserid($profile->userid)
 	: null;
-$private = $profile->getPrivateMsgURL();
-$privateLabel = $profile->getPrivateMsgLabel();
+$private = KunenaFactory::getPrivateMessaging();
 $websiteURL = $profile->getWebsiteURL();
 $websiteName = $profile->getWebsiteName();
 $personalText = $profile->getPersonalText();
@@ -159,21 +158,18 @@ if ($this->config->showuserstats)
 							<?php echo $this->subLayout('User/Item/Social')->set('profile', $profile); ?>
 						</div>
 						<div class="col-md-3 pull-right">
-							<?php if (!empty($private)) : ?>
-								<a class="btn btn-default" href="<?php echo $private; ?>">
-									<i class="glyphicon glyphicon-comments-2"></i>
-									<?php echo $privateLabel ?>
-								</a>
+							<?php if ($private) : ?>
+								<?php echo $private->shownewIcon($profile->userid, 'btn btn-default btn-xs', 'glyphicon glyphicon-comments-2'); ?>
 							<?php endif; ?>
 							<?php if ($email) : ?>
 								<a class="btn btn-default" href="mailto:<?php echo $profile->email; ?>"><i class="glyphicon glyphicon-envelope"></i></a>
 							<?php endif; ?>
 							<?php if (!empty($websiteName) && $websiteURL!='http://') : ?>
-								<a class="btn btn-default btn-small" href="<?php echo $websiteURL ?>"><i class="glyphicon glyphicon-bookmark"></i> <?php echo $websiteName ?></a>
+								<a class="btn btn-default btn-xs" href="<?php echo $websiteURL ?>"><i class="glyphicon glyphicon-bookmark"></i> <?php echo $websiteName ?></a>
 							<?php elseif(empty($websiteName) && $websiteURL!='http://'): ?>
-								<a class="btn btn-default btn-small" href="<?php echo $websiteURL ?>"><i class="glyphicon glyphicon-bookmark"></i> <?php echo $websiteURL ?></a>
+								<a class="btn btn-default btn-xs" href="<?php echo $websiteURL ?>"><i class="glyphicon glyphicon-bookmark"></i> <?php echo $websiteURL ?></a>
 							<?php elseif(!empty($websiteName) && $websiteURL=='http://'): ?>
-								<button class="btn btn-default btn-small"><i class="glyphicon glyphicon-bookmark"></i> <?php echo $websiteName ?></button>
+								<button class="btn btn-default btn-xs"><i class="glyphicon glyphicon-bookmark"></i> <?php echo $websiteName ?></button>
 							<?php endif; ?>
 						</div>
 					</div>
